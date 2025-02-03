@@ -12,17 +12,17 @@ app.post('/register', function (req, res) {
     securityQuestion,
     securityAnswer
   });
-usuario.save((err, usuarioDB) => {
+  usuario.save((err, usuarioDB) => {
     if (err) {
       return res.status(400).json({
-         ok: false,
-         err,
+        ok: false,
+        err,
       });
     }
     res.json({
-          ok: true,
-          usuario: usuarioDB
-       });
-    })
+      ok: true,
+      usuario: usuarioDB
+    });
+  })
 });
 module.exports = app;

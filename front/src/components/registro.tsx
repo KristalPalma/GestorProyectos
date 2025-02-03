@@ -94,7 +94,7 @@ export default function Registro({ onLoginClick, setUser }: RegistroProps) {
                 </label>
                 <input
                   id="usuario"
-                  name="usuario"
+                  name="username"
                   className="w-full rounded-md p-2 border-2 border-Brown-fist outline-none focus:border-Brown-third"
                   placeholder="Juan Pérez"
                   required
