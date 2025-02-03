@@ -1,7 +1,5 @@
-"use client"
-
-import React from "react"
-import { useState } from "react"
+import React, { useState } from "react"
+import axios from "axios"
 
 interface FormData {
   username: string
@@ -41,30 +39,21 @@ export default function Registro({ onLoginClick, setUser }: RegistroProps) {
     setError("")
 
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          securityQuestion: formData.securityQuestion,
-          securityAnswer: formData.securityAnswer,
-        }),
+      const res = await axios.post("http://localhost:3001/api/auth/register", {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        securityQuestion: formData.securityQuestion,
+        securityAnswer: formData.securityAnswer,
       })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error)
+      if (res.status === 200) {
+        // Suponiendo que el backend devuelve un mensaje de éxito
+        setUser([formData.username])
       }
-
-      // Set user after successful registration
-      setUser([formData.username])
     } catch (err: any) {
-      setError(err.message || "Ocurrió un error durante el registro")
+      console.error("Error detallado: ", err) // Muestra más detalles en la consola
+      setError(err.response?.data?.error || err.message || "Ocurrió un error durante el registro")
     } finally {
       setIsLoading(false)
     }
@@ -210,4 +199,3 @@ export default function Registro({ onLoginClick, setUser }: RegistroProps) {
     </section>
   )
 }
-

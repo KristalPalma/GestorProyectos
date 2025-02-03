@@ -1,62 +1,44 @@
-import bcrypt from "bcryptjs"
-import { pool } from "./db"
+const express = require('express');
+const bcrypt = require('bcryptjs'); // Para encriptar las contraseñas
+const User = require('../models/User'); // Asegúrate de tener un modelo de usuario
+const router = express.Router();
 
-export async function hashPassword(password: string) {
-  const salt = await bcrypt.genSalt(10)
-  return bcrypt.hash(password, salt)
-}
+// Ruta POST para registrar usuario
+router.post('/register', async (req, res) => {
+  const { username, email, password, securityQuestion, securityAnswer } = req.body;
 
-export async function verifyPassword(password: string, hashedPassword: string) {
-  return bcrypt.compare(password, hashedPassword)
-}
-
-export async function createUser(
-  username: string,
-  email: string,
-  password: string,
-  securityQuestion: string,
-  securityAnswer: string,
-) {
-  const hashedPassword = await hashPassword(password)
-  const hashedAnswer = await hashPassword(securityAnswer)
-
-  const [result] = await pool.execute(
-    "INSERT INTO users (username, email, password, security_question, security_answer) VALUES (?, ?, ?, ?, ?)",
-    [username, email, hashedPassword, securityQuestion, hashedAnswer],
-  )
-
-  return result
-}
-
-export async function verifyUser(username: string, password: string) {
-  const [rows]: any = await pool.execute("SELECT * FROM users WHERE username = ?", [username])
-
-  if (rows.length === 0) {
-    throw new Error("User not found")
+  // Validar campos
+  if (!username || !email || !password || !securityQuestion || !securityAnswer) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
   }
 
-  const user = rows[0]
-  const isValid = await verifyPassword(password, user.password)
+  try {
+    // Verificar si el email ya existe
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ error: 'El correo electrónico ya está registrado' });
+    }
 
-  if (!isValid) {
-    throw new Error("Invalid password")
+    // Encriptar la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Crear el nuevo usuario
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      securityQuestion,
+      securityAnswer,
+    });
+
+    // Guardar el usuario en la base de datos
+    await newUser.save();
+
+    return res.status(201).json({ message: 'Usuario creado exitosamente' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Hubo un error al crear el usuario' });
   }
+});
 
-  return {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-  }
-}
-
-export async function verifySecurityAnswer(userId: number, answer: string) {
-  const [rows]: any = await pool.execute("SELECT security_answer FROM users WHERE id = ?", [userId])
-
-  if (rows.length === 0) {
-    throw new Error("User not found")
-  }
-
-  const isValid = await verifyPassword(answer, rows[0].security_answer)
-  return isValid
-}
-
+module.exports = router;
